@@ -55,13 +55,9 @@ def get_shop_info():
     date = request.values.get('date')  # date dạng yyyy-mm-dd
     time_mark = request.values.get('time_mark')
     result = None
-    print("date:")
-    print(date)
-    print("time_mark:")
-    print(time_mark)
-    if date and time_mark:
+    if date != 'null' and time_mark != 'null':
         result = ShopDAO.get_info_by_date_and_time(date, time_mark)
-    elif date:
+    elif date != 'null' and time_mark == 'null':
         result = ShopDAO.get_info_by_date(date)
     else:
         result = ShopDAO.get_all_info()

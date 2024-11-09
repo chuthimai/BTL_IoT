@@ -97,7 +97,7 @@
                         <select id="timeRange" class="form-control">
                             <option value="morning">Sáng (06:00 - 12:00)</option>
                             <option value="afternoon">Chiều (12:00 - 18:00)</option>
-                            <option value="evening">Tối (18:00 - 22:00)</option>
+                            <option value="evening">Tối (18:00 - 00:00)</option>
                             <option value="all">Cả ngày</option>
                         </select>
                     </div>
@@ -153,22 +153,6 @@
                 });
         }
 
-        // Ví dụ dữ liệu khách hàng theo ngày và thời gian
-//        const customerData = {
-//            '2024-11-01': {
-//                morning: { entering: [5, 10, 7, 5, 10, 11, 10], exiting: [3, 8, 6, 5, 8, 10, 11] },
-//                afternoon: { entering: [15, 9, 13, 12], exiting: [12, 7, 10] },
-//                evening: { entering: [90, 85], exiting: [20, 19] },
-//                all: { entering: [5, 10, 7, 15, 9, 13, 90, 85], exiting: [3, 8, 6, 12, 7, 10, 20, 19] }
-//            },
-//            '2024-11-02': {
-//                morning: { entering: [6, 12, 8], exiting: [4, 9, 7] },
-//                afternoon: { entering: [18, 10, 14], exiting: [13, 8, 11] },
-//                evening: { entering: [95, 90], exiting: [22, 21] },
-//                all: { entering: [6, 12, 8, 18, 10, 14, 95, 90], exiting: [4, 9, 7, 13, 8, 11, 22, 21] }
-//            }
-//        };
-
         // Khởi tạo biểu đồ Line Chart
         const lineCtx = document.getElementById('lineChart').getContext('2d');
         const lineChart = new Chart(lineCtx, {
@@ -205,6 +189,7 @@
 
         // Hàm cập nhật biểu đồ
         function updateChart(date, timeRange) {
+            if (date === '') date = null;
             // Xác định time_mark dựa trên thời gian người dùng chọn
             let timeMark;
             if (timeRange === 'morning') {
@@ -229,7 +214,7 @@
                 .then(data => {
                     if (data.success) {
                         const result = data["result"] || [];
-                        console.log(result)
+                        console.log(data)
 
                         // Dữ liệu khách hàng vào và ra
                         const entering = result.map(item => item["customers_entering"]);
@@ -240,7 +225,7 @@
                         lineChart.data.labels = labels;
                         lineChart.data.datasets[0].data = entering;
                         lineChart.data.datasets[1].data = exiting;
-                        lineChart.options.elements.line.tension = 0;
+                        lineChart.options.elements.line.tension = 0.4;
                         lineChart.update();
                     }
                 })
@@ -309,8 +294,8 @@
         };
 
         // Cứ mỗi 5 giây sẽ tự động lấy dữ liệu và cập nhật biểu đồ
-//        setInterval(getCustomerInStore, 5000);
-//        setInterval(getStoreState, 1000);
+        setInterval(getCustomerInStore, 5000);
+        setInterval(getStoreState, 2000);
         // Hàm gọi API định kỳ mỗi 3 giây
         function fetchShopInfoPeriodically() {
             const selectedDate = document.getElementById('datePicker').value;
@@ -323,7 +308,7 @@
         }
 
         // Gọi hàm `fetchShopInfoPeriodically` mỗi 3 giây
-        setInterval(fetchShopInfoPeriodically, 1000);
+        setInterval(fetchShopInfoPeriodically, 5000);
 
     });
 </script>

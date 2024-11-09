@@ -61,7 +61,7 @@ class ShopDAO:
             time_to = "18:00:00"
         elif time_mark == '3':
             time_from = "18:00:00"
-            time_to = "22:00:00"
+            time_to = "23:59:59"
 
         try:
             # Câu lệnh SQL để lấy dữ liệu theo date và time
@@ -95,7 +95,7 @@ class ShopDAO:
             # Câu lệnh SQL để lấy dữ liệu theo date và time
             query = '''SELECT * FROM shop
                                WHERE `date` = %s'''
-            cursor.execute(query, (date))
+            cursor.execute(query, (date,))
             results = cursor.fetchall()
 
             # Đóng gói dữ liệu vào list các object Shop
