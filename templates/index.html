@@ -203,7 +203,7 @@
             }
 
             // Gửi yêu cầu lên server để lấy dữ liệu
-            fetch('http://127.0.0.1:5000/get/shop_info/', {
+            fetch('http://192.168.43.107:5000/get/shop_info/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -278,7 +278,7 @@
 
         // Hàm lấy dữ liệu từ API và cập nhật biểu đồ
         const getCustomerInStore = function() {
-            fetch('http://127.0.0.1:5000/get/customer_in_store')
+            fetch('http://192.168.43.107:5000/get/customer_in_store')
                 .then(response => response.json())
                 .then(data => {
                     const customerInStore = parseInt(data["customer_in_store"]);
@@ -295,7 +295,7 @@
 
         // Cứ mỗi 5 giây sẽ tự động lấy dữ liệu và cập nhật biểu đồ
         setInterval(getCustomerInStore, 5000);
-        setInterval(getStoreState, 2000);
+        setInterval(getStoreState, 1000);
         // Hàm gọi API định kỳ mỗi 3 giây
         function fetchShopInfoPeriodically() {
             const selectedDate = document.getElementById('datePicker').value;
