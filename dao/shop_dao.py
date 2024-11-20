@@ -1,3 +1,4 @@
+from dao.shop_statistics_dao import ShopStatisticsDAO
 from model.database_connection import DatabaseConnection
 from model.shop import Shop
 
@@ -109,6 +110,25 @@ class ShopDAO:
                 shops.append(shop.to_dict())
 
             return shops  # Trả về danh sách các Shop
+        except Exception as e:
+            print(f"Error inserting data: {e}")
+            return False
+        finally:
+            cursor.close()
+
+    @classmethod
+    def get_info_by_day_month_year(cls, day: int, month: int, year: int):
+        cursor, conn = get_cursor()
+        try:
+            # Câu lệnh SQL để lấy dữ liệu theo time
+            if day is not None and month is not None and year is not None:
+                return ShopStatisticsDAO.statistics_by_hour(cursor, day, month, year)
+            elif month is not None and year is not None:
+                return ShopStatisticsDAO.statistics_by_day(cursor, month, year)
+            elif year is not None:
+                return ShopStatisticsDAO.statistics_by_month(cursor, year)
+            else:
+                return ShopStatisticsDAO.statistics_by_year(cursor)
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False

@@ -16,6 +16,11 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/monthly_statistics")
+def statistic_by_month():
+    return render_template("monthly_statistics.html")
+
+
 # đẩy dữ liệu số lượng khách trong cửa hàng
 @app.route("/send/customer_in_store", methods=["POST"])
 def set_customer_in_store():
@@ -84,6 +89,33 @@ def set_store_close():
 @app.route("/get/store_state")
 def get_store_state():
     return jsonify({"is_close": is_close})
+
+
+# thống kê theo tháng
+@app.route("/get/statistics", methods=["POST"])
+def get_monthly_statistics():
+    day = request.values.get('day')
+    month = request.values.get('month')
+    year = request.values.get('year')
+
+    try:
+        day = int(day)
+    except Exception:
+        day = None
+
+    try:
+        month = int(month)
+    except Exception:
+        month = None
+
+    try:
+        year = int(year)
+    except Exception:
+        year = None
+
+    result = ShopDAO.get_info_by_day_month_year(day, month, year)
+
+    return jsonify({"success": "Get data successful.", "result": result})
 
 
 if __name__ == "__main__":

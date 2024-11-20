@@ -9,69 +9,13 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1"></script>
-
-    <style>
-        .container {
-            margin-top: 1%;
-        }
-        .chart-container {
-            display: none; /* Bắt đầu ẩn biểu đồ */
-        }
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .switch input {
-            display: none;
-        }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-        .switch input:checked + .slider {
-            background-color: #3B1E54;
-        }
-        .slider.round {
-            border-radius: 34px;
-        }
-        .slider.round:before {
-            border-radius: 50%;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.4s;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: 0.4s;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-
-    </style>
+<!--    CSS-->
+    <link rel="stylesheet" href="../static/styles/main.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg bg-body-tertiary" style="background-color: #E4B1F0;">
-    <div class="container-fluid">
-        <a class="navbar-brand" style="color: black;"><b>Theo dõi cửa hàng từ xa</b></a>
-    </div>
+<nav>
+    <a class="select">Theo dõi cửa hàng từ xa</a>
+    <a href="http://127.0.0.1:5000/monthly_statistics">Thống kê</a>
 </nav>
 <div class="container">
     <!-- Toggle Switch -->
@@ -203,7 +147,7 @@
             }
 
             // Gửi yêu cầu lên server để lấy dữ liệu
-            fetch('http://192.168.43.107:5000/get/shop_info/', {
+            fetch('http://127.0.0.1:5000/get/shop_info/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -278,7 +222,7 @@
 
         // Hàm lấy dữ liệu từ API và cập nhật biểu đồ
         const getCustomerInStore = function() {
-            fetch('http://192.168.43.107:5000/get/customer_in_store')
+            fetch('http://127.0.0.1:5000/get/customer_in_store')
                 .then(response => response.json())
                 .then(data => {
                     const customerInStore = parseInt(data["customer_in_store"]);
