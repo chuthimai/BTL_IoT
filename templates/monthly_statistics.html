@@ -128,6 +128,22 @@
                         chart.data.labels = labels;
                         chart.data.datasets[0].data = entering;
                         chart.data.datasets[1].data = exiting;
+
+                        if (result != []) {
+                            if (result[0]["year"] != null) {
+                                chart.options.scales.x.title.text = "Year";
+                            }
+                            if (result[0]["month"] != null) {
+                                chart.options.scales.x.title.text = "Month";
+                            }
+                            if (result[0]["day"] != null) {
+                                chart.options.scales.x.title.text = "Day";
+                            }
+                            if (result[0]["hour"] != null) {
+                                chart.options.scales.x.title.text = "Hour";
+                            }
+                        }
+
                         chart.update();
                     }
                 })
