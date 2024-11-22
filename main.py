@@ -121,7 +121,7 @@ def get_monthly_statistics():
 if __name__ == "__main__":
     app.run(
         debug=False,
-        host='0.0.0.0',
+        # host='0.0.0.0',
         port=5000
     )
 
