@@ -13,11 +13,11 @@ class DatabaseConnection:
             cls._instance = super(DatabaseConnection, cls).__new__(cls)
             try:
                 cls._connection = mysql.connector.connect(
-                    host='MaiCT.mysql.pythonanywhere-services.com',
+                    host='localhost',
                     port=3306,
-                    user='MaiCT',
-                    password='B21DCCN082',
-                    database='MaiCT$btl_iot'
+                    user='root',
+                    password='12345678',
+                    database='btl_iot'
                 )
                 print("Database connection established!")
             except Error as e:
