@@ -13,11 +13,11 @@ class DatabaseConnection:
             cls._instance = super(DatabaseConnection, cls).__new__(cls)
             try:
                 cls._connection = mysql.connector.connect(
-                    host='localhost',
+                    host='sql10.freesqldatabase.com',
                     port=3306,
-                    user='root',
-                    password='12345678',
-                    database='btl_iot'
+                    user='sql10746631',
+                    password='gB3ipJbu5J',
+                    database='sql10746631'
                 )
                 print("Database connection established!")
             except Error as e:

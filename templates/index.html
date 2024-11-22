@@ -238,8 +238,8 @@
         };
 
         // Cứ mỗi 5 giây sẽ tự động lấy dữ liệu và cập nhật biểu đồ
-        setInterval(getCustomerInStore, 5000);
-        setInterval(getStoreState, 1000);
+        setInterval(getCustomerInStore, 10000);
+        setInterval(getStoreState, 10000);
         // Hàm gọi API định kỳ mỗi 3 giây
         function fetchShopInfoPeriodically() {
             const selectedDate = document.getElementById('datePicker').value;
@@ -252,7 +252,7 @@
         }
 
         // Gọi hàm `fetchShopInfoPeriodically` mỗi 3 giây
-        setInterval(fetchShopInfoPeriodically, 1000);
+        setInterval(fetchShopInfoPeriodically, 10000);
 
     });
 </script>
