@@ -15,7 +15,7 @@
 <body>
 <nav>
     <a class="select">Theo dõi cửa hàng từ xa</a>
-    <a href="http://127.0.0.1:5000/monthly_statistics">Thống kê</a>
+    <a href="https://btl-iot.onrender.com/monthly_statistics">Thống kê</a>
 </nav>
 <div class="container">
     <!-- Toggle Switch -->
@@ -70,14 +70,14 @@
         toggleSwitch.addEventListener('change', function () {
             toggleStatus.textContent = this.checked ? 'Mở' : 'Đóng';
             if (toggleStatus.textContent == 'Mở') {
-                fetch('http://127.0.0.1:5000/send/store_open')
+                fetch('https://btl-iot.onrender.com/send/store_open')
             } else {
-                fetch('http://127.0.0.1:5000/send/store_close')
+                fetch('https://btl-iot.onrender.com/send/store_close')
             }
         });
 
         const getStoreState = function() {
-            fetch('http://127.0.0.1:5000/get/store_state')
+            fetch('https://btl-iot.onrender.com/get/store_state')
                 .then(response => response.json())
                 .then(data => {
                     const is_close = data["is_close"];
@@ -147,7 +147,7 @@
             }
 
             // Gửi yêu cầu lên server để lấy dữ liệu
-            fetch('http://127.0.0.1:5000/get/shop_info/', {
+            fetch('https://btl-iot.onrender.com/get/shop_info/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -222,7 +222,7 @@
 
         // Hàm lấy dữ liệu từ API và cập nhật biểu đồ
         const getCustomerInStore = function() {
-            fetch('http://127.0.0.1:5000/get/customer_in_store')
+            fetch('https://btl-iot.onrender.com/get/customer_in_store')
                 .then(response => response.json())
                 .then(data => {
                     const customerInStore = parseInt(data["customer_in_store"]);
