@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+
+from firebase_admin import firestore
 from dao.shop_statistics_dao import ShopStatisticsDAO
 from model.database_connection import DatabaseConnection
 from model.shop import Shop
@@ -6,51 +9,50 @@ from model.shop import Shop
 def get_cursor():
     database = DatabaseConnection()
     conn = database.get_connection()
-    return conn.cursor(dictionary=True), conn
+    return conn
 
 
 class ShopDAO:
     @classmethod
     def get_all_info(cls):
-        cursor, conn = get_cursor()
+        conn = get_cursor()
         try:
-            query = "SELECT * FROM shop"
-            cursor.execute(query)
-            results = cursor.fetchall()
+            results = conn.collection("shop").get()
             # Đóng gói dữ liệu vào list các object Shop
             shops = []
             for row in results:
+                row = row.to_dict()
                 shop = Shop(row['customers_entering'], row['customers_exiting'])
-                shop.set_date(row['date'].strftime('%Y-%m-%d'))
-                hours, remainder = divmod(row['time'].seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                shop.set_time(f"{hours:02}:{minutes:02}:{seconds:02}")
+                # kiểu DatetimeWithNanoseconds
+                datetime_value = row['datetime'] + timedelta(hours=7)  # chuyển sang UTC+7
+                date = datetime_value.strftime(f'{datetime_value.year}-{datetime_value.month}-{datetime_value.day}')
+                time = datetime_value.strftime(f'{datetime_value.hour}:{datetime_value.minute}:{datetime_value.second}')
+                shop.set_date(date)
+                shop.set_time(time)
                 shops.append(shop.to_dict())
             return shops
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False
-        finally:
-            cursor.close()
 
     @classmethod
     def add_info(cls, shop: Shop) -> bool:
-        cursor, conn = get_cursor()
+        conn = get_cursor()
         try:
-            query = '''INSERT INTO shop (customers_entering, customers_exiting, `time`, `date`)
-                        VALUES (%s, %s, TIME(NOW()), DATE(NOW()))'''
-            cursor.execute(query, (shop.customers_entering, shop.customers_exiting))
-            conn.commit()
+            data = {
+                'customers_entering': shop.customers_entering,
+                'customers_exiting': shop.customers_exiting,
+                'datetime': firestore.SERVER_TIMESTAMP
+            }
+            conn.collection("shop").add(data)
             return True
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False
-        finally:
-            cursor.close()
 
     @classmethod
     def get_info_by_date_and_time(cls, date: str, time_mark: str):
-        cursor, conn = get_cursor()
+        conn = get_cursor()
         time_from = None
         time_to = None
 
@@ -65,73 +67,81 @@ class ShopDAO:
             time_to = "23:59:59"
 
         try:
-            # Câu lệnh SQL để lấy dữ liệu theo date và time
-            query = '''SELECT * FROM shop
-                           WHERE `date` = %s AND `time` BETWEEN %s AND %s'''
+            # Chuyển `date` và `time` thành `datetime` để dùng trong Firestore
+            date_start = datetime.strptime(f"{date} {time_from}", "%Y-%m-%d %H:%M:%S")
+            date_end = datetime.strptime(f"{date} {time_to}", "%Y-%m-%d %H:%M:%S")
 
-            cursor.execute(query, (date, time_from, time_to))
-            results = cursor.fetchall()
+            # Truy vấn Firestore với `where`
+            results = (
+                conn.collection("shop")
+                .where("datetime", ">=", date_start - timedelta(hours=7))
+                .where("datetime", "<=", date_end - timedelta(hours=7))
+                .get()
+            )
 
             # Đóng gói dữ liệu vào list các object Shop
             shops = []
             for row in results:
+                row = row.to_dict()
                 shop = Shop(row['customers_entering'], row['customers_exiting'])
-                shop.set_date(row['date'].strftime('%Y-%m-%d'))
-                hours, remainder = divmod(row['time'].seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                shop.set_time(f"{hours:02}:{minutes:02}:{seconds:02}")
+                # kiểu DatetimeWithNanoseconds
+                datetime_value = row['datetime'] + timedelta(hours=7)  # chuyển sang UTC+7
+                date = datetime_value.strftime(f'{datetime_value.year}-{datetime_value.month}-{datetime_value.day}')
+                time = datetime_value.strftime(f'{datetime_value.hour}:{datetime_value.minute}:{datetime_value.second}')
+                shop.set_date(date)
+                shop.set_time(time)
                 shops.append(shop.to_dict())
-
             return shops  # Trả về danh sách các Shop
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False
-        finally:
-            cursor.close()
 
     @classmethod
     def get_info_by_date(cls, date: str):
-        cursor, conn = get_cursor()
+        conn = get_cursor()
         try:
-            # Câu lệnh SQL để lấy dữ liệu theo date và time
-            query = '''SELECT * FROM shop
-                               WHERE `date` = %s'''
-            cursor.execute(query, (date,))
-            results = cursor.fetchall()
+            # Chuyển `date` và `time` thành `datetime` để dùng trong Firestore
+            date_start = datetime.strptime(f"{date} 00:00:00", "%Y-%m-%d %H:%M:%S")
+            date_end = datetime.strptime(f"{date} 23:59:59", "%Y-%m-%d %H:%M:%S")
+
+            # Truy vấn Firestore với `where`
+            results = (
+                conn.collection("shop")
+                .where("datetime", ">=", date_start)
+                .where("datetime", "<=", date_end)
+                .get()
+            )
 
             # Đóng gói dữ liệu vào list các object Shop
             shops = []
             for row in results:
+                row = row.to_dict()
                 shop = Shop(row['customers_entering'], row['customers_exiting'])
-                shop.set_date(row['date'].strftime('%Y-%m-%d'))
-                hours, remainder = divmod(row['time'].seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                shop.set_time(f"{hours:02}:{minutes:02}:{seconds:02}")
+                # kiểu DatetimeWithNanoseconds
+                datetime_value = row['datetime'] + timedelta(hours=7)  # chuyển sang UTC+7
+                date = datetime_value.strftime(f'{datetime_value.year}-{datetime_value.month}-{datetime_value.day}')
+                time = datetime_value.strftime(f'{datetime_value.hour}:{datetime_value.minute}:{datetime_value.second}')
+                shop.set_date(date)
+                shop.set_time(time)
                 shops.append(shop.to_dict())
-
             return shops  # Trả về danh sách các Shop
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False
-        finally:
-            cursor.close()
 
     @classmethod
     def get_info_by_day_month_year(cls, day: int, month: int, year: int):
-        cursor, conn = get_cursor()
+        conn = get_cursor()
         try:
             # Câu lệnh SQL để lấy dữ liệu theo time
             if day is not None and month is not None and year is not None:
-                return ShopStatisticsDAO.statistics_by_hour(cursor, day, month, year)
+                return ShopStatisticsDAO.statistics_by_hour(conn, day, month, year)
             elif month is not None and year is not None:
-                return ShopStatisticsDAO.statistics_by_day(cursor, month, year)
+                return ShopStatisticsDAO.statistics_by_day(conn, month, year)
             elif year is not None:
-                return ShopStatisticsDAO.statistics_by_month(cursor, year)
+                return ShopStatisticsDAO.statistics_by_month(conn, year)
             else:
-                return ShopStatisticsDAO.statistics_by_year(cursor)
+                return ShopStatisticsDAO.statistics_by_year(conn)
         except Exception as e:
             print(f"Error inserting data: {e}")
             return False
-        finally:
-            cursor.close()
-
