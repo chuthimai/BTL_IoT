@@ -11,7 +11,7 @@ class DatabaseConnection:
         # Kiểm tra xem instance đã tồn tại chưa
         if cls._cred is None:
             # Nếu chưa, tạo một instance mới và thiết lập kết nối
-            cls._cred = credentials.Certificate("./credentials.json")
+            cls._cred = credentials.Certificate("/etc/secrets/credentials.json")
 
             # Khởi tạo Firebase
             firebase_admin.initialize_app(cls._cred)
