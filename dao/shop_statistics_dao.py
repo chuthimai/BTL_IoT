@@ -1,83 +1,145 @@
-from mysql.connector.cursor import MySQLCursorDict
+from collections import defaultdict
+from datetime import timedelta, datetime
+
+import google
 
 
 class ShopStatisticsDAO:
     @staticmethod
-    def statistics_by_hour(cursor: MySQLCursorDict, day: int, month: int, year: int):
-        query = '''
-        SELECT 
-            HOUR(time) AS hour,
-            SUM(customers_entering) AS total_customers_entering,
-            SUM(customers_exiting) AS total_customers_exiting
-        FROM shop
-        WHERE DAY(date) = %s AND MONTH(date) = %s AND YEAR(date) = %s
-        GROUP BY HOUR(time)
-        ORDER BY hour
-        '''
-        cursor.execute(query, (day, month, year))
-        results = cursor.fetchall()
-        return [{
-            "hour": str(row['hour']) + ":00",
-            "total_customers_entering": row['total_customers_entering'],
-            "total_customers_exiting": row['total_customers_exiting']
-        } for row in results]
+    def statistics_by_hour(conn: google.cloud.firestore_v1.client.Client, day: int, month: int, year: int):
+        # Chuyển `date` và `time` thành `datetime` để dùng trong Firestore
+        date_start = datetime.strptime(f"{year}-{month}-{day} 00:00:00", "%Y-%m-%d %H:%M:%S")
+        date_end = datetime.strptime(f"{year}-{month}-{day} 23:59:59", "%Y-%m-%d %H:%M:%S")
+
+        # Truy vấn Firestore với `where`
+        results = (
+            conn.collection("shop")
+            .where("datetime", ">=", date_start)
+            .where("datetime", "<=", date_end)
+            .get()
+        )
+
+        # Dữ liệu kết quả
+        hourly_data = defaultdict(lambda: {"total_customers_entering": 0, "total_customers_exiting": 0})
+        for row in results:
+            data = row.to_dict()
+            # kiểu DatetimeWithNanoseconds
+            datetime_value = data['datetime'] + timedelta(hours=7)  # chuyển sang UTC+7
+            hour = datetime_value.hour
+            hourly_data[hour]["total_customers_entering"] += data.get("customers_entering", 0)
+            hourly_data[hour]["total_customers_exiting"] += data.get("customers_exiting", 0)
+
+        return [
+            {
+                "hour": f"{hour}:00",
+                "total_customers_entering": hourly_data[hour]["total_customers_entering"],
+                "total_customers_exiting": hourly_data[hour]["total_customers_exiting"],
+            }
+            for hour in sorted(hourly_data.keys())
+        ]
 
     @staticmethod
-    def statistics_by_day(cursor: MySQLCursorDict, month: int, year: int):
-        query = '''
-                SELECT 
-                    DAY(date) AS day,
-                    SUM(customers_entering) AS total_customers_entering,
-                    SUM(customers_exiting) AS total_customers_exiting
-                FROM shop
-                WHERE MONTH(date) = %s AND YEAR(date) = %s
-                GROUP BY DAY(date)
-                ORDER BY day
-                '''
-        cursor.execute(query, (month, year))
-        results = cursor.fetchall()
-        return [{
-            "day": row['day'],
-            "total_customers_entering": row['total_customers_entering'],
-            "total_customers_exiting": row['total_customers_exiting']
-        } for row in results]
+    def statistics_by_day(conn: google.cloud.firestore_v1.client.Client, month: int, year: int):
+        # Tạo khoảng thời gian cho tháng được chỉ định
+        start_date = datetime(year, month, 1, 0, 0, 0)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1, 0, 0, 0) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month + 1, 1, 0, 0, 0) - timedelta(seconds=1)
+
+        # Truy vấn Firestore
+        results = (
+            conn.collection("shop")
+            .where("datetime", ">=", start_date)
+            .where("datetime", "<=", end_date)
+            .get()
+        )
+
+        # Lưu trữ dữ liệu theo ngày
+        daily_data = defaultdict(lambda: {"total_customers_entering": 0, "total_customers_exiting": 0})
+
+        # Xử lý từng bản ghi
+        for row in results:
+            data = row.to_dict()
+            datetime_value = data["datetime"]
+
+            day = datetime_value.day  # Lấy ngày
+            daily_data[day]["total_customers_entering"] += data.get("customers_entering", 0)
+            daily_data[day]["total_customers_exiting"] += data.get("customers_exiting", 0)
+
+        # Định dạng kết quả
+        return [
+            {
+                "day": day,
+                "total_customers_entering": daily_data[day]["total_customers_entering"],
+                "total_customers_exiting": daily_data[day]["total_customers_exiting"],
+            }
+            for day in sorted(daily_data.keys())
+        ]
 
     @staticmethod
-    def statistics_by_month(cursor: MySQLCursorDict, year: int):
-        query = '''
-                SELECT 
-                    MONTH(date) AS month,
-                    SUM(customers_entering) AS total_customers_entering,
-                    SUM(customers_exiting) AS total_customers_exiting
-                FROM shop
-                WHERE YEAR(date) = %s
-                GROUP BY MONTH(date)
-                ORDER BY month
-                '''
-        cursor.execute(query, (year,))
-        results = cursor.fetchall()
-        months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jan", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        return [{
-            "month": months[row['month']],
-            "total_customers_entering": row['total_customers_entering'],
-            "total_customers_exiting": row['total_customers_exiting']
-        } for row in results]
+    def statistics_by_month(conn: google.cloud.firestore_v1.client.Client, year: int):
+        # Xác định khoảng thời gian cho năm được chỉ định
+        start_date = datetime(year, 1, 1, 0, 0, 0)  # Ngày đầu tiên của năm
+        end_date = datetime(year + 1, 1, 1, 0, 0, 0) - timedelta(seconds=1)  # Ngày cuối cùng của năm
+
+        # Truy vấn Firestore để lấy dữ liệu trong khoảng thời gian
+        results = (
+            conn.collection("shop")
+            .where("datetime", ">=", start_date)
+            .where("datetime", "<=", end_date)
+            .get()
+        )
+
+        # Lưu trữ dữ liệu theo tháng
+        monthly_data = defaultdict(lambda: {"total_customers_entering": 0, "total_customers_exiting": 0})
+
+        # Xử lý từng bản ghi
+        for row in results:
+            data = row.to_dict()
+            datetime_value = data["datetime"]  # Giả định `datetime` là kiểu Timestamp hoặc datetime
+
+            month = datetime_value.month  # Lấy tháng
+            monthly_data[month]["total_customers_entering"] += data.get("customers_entering", 0)
+            monthly_data[month]["total_customers_exiting"] += data.get("customers_exiting", 0)
+
+        # Danh sách tháng (định dạng rút gọn)
+        months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        # Sắp xếp và định dạng kết quả
+        return [
+            {
+                "month": months[month],
+                "total_customers_entering": monthly_data[month]["total_customers_entering"],
+                "total_customers_exiting": monthly_data[month]["total_customers_exiting"],
+            }
+            for month in sorted(monthly_data.keys())
+        ]
 
     @staticmethod
-    def statistics_by_year(cursor: MySQLCursorDict):
-        query = '''
-                SELECT 
-                    YEAR(date) AS year,
-                    SUM(customers_entering) AS total_customers_entering,
-                    SUM(customers_exiting) AS total_customers_exiting
-                FROM shop
-                GROUP BY YEAR(date)
-                ORDER BY year
-                '''
-        cursor.execute(query)
-        results = cursor.fetchall()
-        return [{
-            "year": row['year'],
-            "total_customers_entering": row['total_customers_entering'],
-            "total_customers_exiting": row['total_customers_exiting']
-        } for row in results]
+    def statistics_by_year(conn: google.cloud.firestore_v1.client.Client):
+        # Truy vấn tất cả các bản ghi trong bộ sưu tập
+        results = conn.collection("shop").get()
+
+        # Lưu trữ dữ liệu theo năm
+        yearly_data = defaultdict(lambda: {"total_customers_entering": 0, "total_customers_exiting": 0})
+
+        # Xử lý từng bản ghi
+        for row in results:
+            data = row.to_dict()
+            datetime_value = data["datetime"]  # Giả định `datetime` là kiểu Timestamp hoặc datetime
+
+            year = datetime_value.year  # Lấy năm
+            yearly_data[year]["total_customers_entering"] += data.get("customers_entering", 0)
+            yearly_data[year]["total_customers_exiting"] += data.get("customers_exiting", 0)
+
+        # Định dạng kết quả
+        return [
+            {
+                "year": year,
+                "total_customers_entering": yearly_data[year]["total_customers_entering"],
+                "total_customers_exiting": yearly_data[year]["total_customers_exiting"],
+            }
+            for year in sorted(yearly_data.keys())
+        ]
+

@@ -14,7 +14,7 @@
 </head>
 <body>
     <nav>
-        <a href="https://btl-iot.onrender.com/">Theo dõi cửa hàng từ xa</a>
+        <a href="http://127.0.0.1:5000/">Theo dõi cửa hàng từ xa</a>
         <a class="select">Thống kê</a>
     </nav>
     <div class="container" style="display: flex; flex-direction: column; align-items: center;">
@@ -106,7 +106,7 @@
             const year = document.getElementById("year").value || null;
 
             // Gửi yêu cầu lên server để lấy dữ liệu
-            fetch('https://btl-iot.onrender.com/get/statistics', {
+            fetch('http://127.0.0.1:5000/get/statistics', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
