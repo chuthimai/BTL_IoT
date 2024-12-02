@@ -1,10 +1,15 @@
+from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
+
+from dao.shop_dao import ShopDAO
+from model.shop import Shop
+
 import threading
 import time
 import os
 import smtplib
-from dotenv import load_dotenv
-
-load_dotenv()  # Tải biến môi trường từ .env
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 sender_email = os.getenv("SENDER_EMAIL")
 sender_password = os.getenv("SENDER_PASSWORD")
@@ -12,12 +17,6 @@ sender_password = os.getenv("SENDER_PASSWORD")
 if not sender_email or not sender_password:
     raise ValueError("Sender email or password is missing. Please set environment variables.")
 
-
-from flask import Flask, jsonify, request, render_template
-from flask_cors import CORS
-
-from dao.shop_dao import ShopDAO
-from model.shop import Shop
 
 app = Flask(__name__)
 CORS(app)
@@ -30,9 +29,11 @@ is_close = False
 def home():
     return render_template("index.html")
 
+
 @app.route("/theft")
 def theft_page():
     return render_template("theft.html")
+
 
 @app.route("/monthly_statistics")
 def statistic_by_month():
@@ -103,12 +104,6 @@ def set_store_close():
     return jsonify({"success": "Send successful."})
 
 
-# nhận trạng thái cửa hàng
-@app.route("/get/store_state")
-def get_store_state():
-    return jsonify({"is_close": is_close})
-
-
 # thống kê theo tháng
 @app.route("/get/statistics", methods=["POST"])
 def get_monthly_statistics():
@@ -134,22 +129,31 @@ def get_monthly_statistics():
     result = ShopDAO.get_info_by_day_month_year(day, month, year)
 
     return jsonify({"success": "Get data successful.", "result": result})
+
+
 @app.route("/get/store_state")
 def get_store_state():
     global is_close
     return jsonify({"is_close": is_close})
 
-# Cập nhật thông tin trộm (theft)
+
 is_sending_emails = False
+has_theft = False
+
+
+# Cập nhật thông tin trộm (theft)
 @app.route("/update_theft", methods=["POST"])
 def update_theft():
-    global is_sending_emails, is_close
-    data = request.get_json()
-    has_theft = data.get("hasTheft")
+    global is_sending_emails, is_close, has_theft
+    data = request.values.get("hasTheft")
+    if data == "1":
+        has_theft = True
+    else:
+        has_theft = False
 
     if has_theft and not is_sending_emails:
         is_close = True  # Cập nhật trạng thái cửa hàng
-        with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+        with open('./templates/email.txt', 'r') as f:
             email_list = f.read().splitlines()
 
         is_sending_emails = True
@@ -166,23 +170,43 @@ def update_theft():
 def send_warning_emails():
     while is_sending_emails:
         send_email()
-        time.sleep(60)  # Gửi email mỗi 2 phút
+        time.sleep(120)  # Gửi email mỗi 2 phút
 
 
 def send_email():
-    subject = "Warning: Theft Detected"
-    body = "There has been a theft detected at the store. Please take necessary actions."
-    with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+    with open('./templates/email.txt', 'r') as f:
         email_list = f.read().splitlines()
+
+    # Đọc nội dung từ file HTML
+    html_file_path = "./templates/email_content.html"
+    try:
+        with open(html_file_path, "r", encoding="utf-8") as file:
+            html_content = file.read()
+    except Exception as e:
+        print("Lỗi khi đọc file HTML:", str(e))
+        return
+
     # Tạo kết nối tới server SMTP
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(sender_email, sender_password)
 
     for email in email_list:
-        message = f"Subject: {subject}\n\n{body}"
-        server.sendmail(sender_email, email, message)
+        # Tạo email
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Warning: Theft Detected"
+        msg["From"] = sender_email
+        msg["To"] = email
 
+        # Đính kèm nội dung HTML
+        msg.attach(MIMEText(html_content, "html"))
+
+        try:
+            # Kết nối tới SMTP server và gửi email
+            server.sendmail(sender_email, email, msg.as_string())
+            print("Email đã được gửi thành công!")
+        except Exception as e:
+            print("Đã xảy ra lỗi khi gửi email:", str(e))
     server.quit()
 
 
@@ -192,7 +216,7 @@ def check_email():
     global is_sending_emails, is_close
     data = request.get_json()
     email_to_check = data.get("email")
-    with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+    with open('./templates/email.txt', 'r') as f:
         email_list = f.read().splitlines()
     if email_to_check in email_list:
         is_sending_emails = False

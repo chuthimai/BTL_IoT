@@ -105,65 +105,18 @@
 </head>
 <body>
     <div class="container">
-        <div id="safe-container" class="status-container">
-            <div class="icon safe">
-                <i class="fas fa-shield-alt"></i>
-            </div>
-            <header>An toàn!</header>
-            <p>Hệ thống đang ở trạng thái an toàn.</p>
-        </div>
-        <div id="alert-container" class="status-container hidden">
+        <div id="alert-container" class="status-container">
             <div class="icon alert">
                 <i class="fas fa-exclamation-triangle"></i>
             </div>
             <header>Cảnh báo!</header>
-            <p>Phát hiện trộm! Vui lòng kiểm tra ngay.</p>
+            <p>Phát hiện trộm! Vui lòng kiểm tra ngay. Chuyển đến trang web để xác nhận bằng nút dưới đây.</p>
             <div class="btns">
-                <button class="alert-btn" id="confirm-button">Xác nhận</button>
+                <a href="https://btl-iot.onrender.com/theft">
+                    <button class="alert-btn" id="confirm-button">Xác nhận</button>
+                </a>
             </div>
         </div>
     </div>
-
-    <script>
-        const alertContainer = document.getElementById("alert-container");
-        const safeContainer = document.getElementById("safe-container");
-        const confirmButton = document.getElementById("confirm-button");
-
-        function checkTheftStatus() {
-            fetch("https://btl-iot.onrender.com/get/store_state")
-                .then(response => response.json())
-                .then(data => {
-                    if (data.is_close) {
-                        alertContainer.classList.remove("hidden");
-                        safeContainer.classList.add("hidden");
-                    } else {
-                        alertContainer.classList.add("hidden");
-                        safeContainer.classList.remove("hidden");
-                    }
-                })
-                .catch(error => console.error("Lỗi khi kiểm tra trạng thái:", error));
-        }
-
-        setInterval(checkTheftStatus, 5000);
-
-        confirmButton.addEventListener("click", () => {
-            const email = "maidangthanh99@gmail.com";
-            fetch("https://btl-iot.onrender.com/check_email", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email })
-            })
-                .then(response => {
-                    if (response.ok) {
-                        alert("Đã xác nhận và dừng gửi email.");
-                        alertContainer.classList.add("hidden");
-                        safeContainer.classList.remove("hidden");
-                    } else {
-                        alert("Có lỗi xảy ra. Vui lòng thử lại.");
-                    }
-                })
-                .catch(error => console.error("Lỗi khi gửi yêu cầu:", error));
-        });
-    </script>
 </body>
 </html>
