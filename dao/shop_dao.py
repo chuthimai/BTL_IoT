@@ -3,10 +3,22 @@ from model.database_connection import DatabaseConnection
 from model.shop import Shop
 
 
+# def get_cursor():
+#     database = DatabaseConnection()
+#     conn = database.get_connection()
+#     return conn.cursor(dictionary=True), conn
 def get_cursor():
-    database = DatabaseConnection()
-    conn = database.get_connection()
-    return conn.cursor(dictionary=True), conn
+    try:
+        database = DatabaseConnection()
+        conn = database.get_connection()
+
+        if conn is None:
+            raise Exception("Database connection not established.")
+
+        return conn.cursor(dictionary=True), conn
+    except Exception as e:
+        print(f"Error in get_cursor: {e}")
+        raise e  # Re-raise the exception to be handled in the calling code
 
 
 class ShopDAO:

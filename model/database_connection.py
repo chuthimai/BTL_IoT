@@ -16,8 +16,8 @@ class DatabaseConnection:
                     host='localhost',
                     port=3306,
                     user='root',
-                    password='12345678',
-                    database='btl_iot'
+                    password='maithanh',
+                    database='job'
                 )
                 print("Database connection established!")
             except Error as e:
