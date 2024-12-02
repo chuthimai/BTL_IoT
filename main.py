@@ -1,3 +1,18 @@
+import threading
+import time
+import os
+import smtplib
+from dotenv import load_dotenv
+
+load_dotenv()  # Tải biến môi trường từ .env
+
+sender_email = os.getenv("SENDER_EMAIL")
+sender_password = os.getenv("SENDER_PASSWORD")
+
+if not sender_email or not sender_password:
+    raise ValueError("Sender email or password is missing. Please set environment variables.")
+
+
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
@@ -15,6 +30,9 @@ is_close = False
 def home():
     return render_template("index.html")
 
+@app.route("/theft")
+def theft_page():
+    return render_template("theft.html")
 
 @app.route("/monthly_statistics")
 def statistic_by_month():
@@ -116,6 +134,72 @@ def get_monthly_statistics():
     result = ShopDAO.get_info_by_day_month_year(day, month, year)
 
     return jsonify({"success": "Get data successful.", "result": result})
+@app.route("/get/store_state")
+def get_store_state():
+    global is_close
+    return jsonify({"is_close": is_close})
+
+# Cập nhật thông tin trộm (theft)
+is_sending_emails = False
+@app.route("/update_theft", methods=["POST"])
+def update_theft():
+    global is_sending_emails, is_close
+    data = request.get_json()
+    has_theft = data.get("hasTheft")
+
+    if has_theft and not is_sending_emails:
+        is_close = True  # Cập nhật trạng thái cửa hàng
+        with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+            email_list = f.read().splitlines()
+
+        is_sending_emails = True
+        threading.Thread(target=send_warning_emails).start()
+        return jsonify({"success": "Theft detected, starting to send warning emails."})
+    elif not has_theft and is_sending_emails:
+        is_close = False  # Cập nhật trạng thái cửa hàng
+        is_sending_emails = False
+        return jsonify({"success": "Theft status is clear, email sending stopped."})
+    else:
+        return jsonify({"error": "Invalid theft status or already in requested state."})
+
+
+def send_warning_emails():
+    while is_sending_emails:
+        send_email()
+        time.sleep(60)  # Gửi email mỗi 2 phút
+
+
+def send_email():
+    subject = "Warning: Theft Detected"
+    body = "There has been a theft detected at the store. Please take necessary actions."
+    with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+        email_list = f.read().splitlines()
+    # Tạo kết nối tới server SMTP
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(sender_email, sender_password)
+
+    for email in email_list:
+        message = f"Subject: {subject}\n\n{body}"
+        server.sendmail(sender_email, email, message)
+
+    server.quit()
+
+
+# Kiểm tra email và dừng gửi email nếu có trong danh sách
+@app.route("/check_email", methods=["POST"])
+def check_email():
+    global is_sending_emails, is_close
+    data = request.get_json()
+    email_to_check = data.get("email")
+    with open('/Users/apple/Desktop/BTL_IoT/templates/email.txt', 'r') as f:
+        email_list = f.read().splitlines()
+    if email_to_check in email_list:
+        is_sending_emails = False
+        is_close = False  # Cập nhật trạng thái an toàn
+        return jsonify({"success": "Email found, stopped sending warning emails."})
+    else:
+        return jsonify({"error": "Email not found."})
 
 
 if __name__ == "__main__":
