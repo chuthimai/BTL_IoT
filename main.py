@@ -22,6 +22,8 @@ app = Flask(__name__)
 CORS(app)
 customer_in_store = 0
 is_close = False
+is_sending_emails = False
+has_theft = False
 
 
 # kiểm tra kết nối đến server
@@ -137,10 +139,6 @@ def get_store_state():
     return jsonify({"is_close": is_close})
 
 
-is_sending_emails = False
-has_theft = False
-
-
 # Cập nhật thông tin trộm (theft)
 @app.route("/update_theft", methods=["POST"])
 def update_theft():
@@ -167,6 +165,12 @@ def update_theft():
         return jsonify({"error": "Invalid theft status or already in requested state."})
 
 
+@app.route('/check_theft')
+def check_theft():
+    global has_theft
+    return jsonify({'has_theft': has_theft})
+
+
 def send_warning_emails():
     while is_sending_emails:
         send_email()
@@ -174,39 +178,21 @@ def send_warning_emails():
 
 
 def send_email():
+    subject = "Warning: Theft Detected"
+    body = ("There has been a theft detected at the store. Please take necessary actions. "
+            "Click the link below to go to the website to confirm receipt of the notification."
+            "\n Link: https://btl-iot.onrender.com/theft")
     with open('./templates/email.txt', 'r') as f:
         email_list = f.read().splitlines()
-
-    # Đọc nội dung từ file HTML
-    html_file_path = "./templates/email_content.html"
-    try:
-        with open(html_file_path, "r", encoding="utf-8") as file:
-            html_content = file.read()
-    except Exception as e:
-        print("Lỗi khi đọc file HTML:", str(e))
-        return
-
     # Tạo kết nối tới server SMTP
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(sender_email, sender_password)
 
     for email in email_list:
-        # Tạo email
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Warning: Theft Detected"
-        msg["From"] = sender_email
-        msg["To"] = email
+        message = f"Subject: {subject}\n\n{body}"
+        server.sendmail(sender_email, email, message)
 
-        # Đính kèm nội dung HTML
-        msg.attach(MIMEText(html_content, "html"))
-
-        try:
-            # Kết nối tới SMTP server và gửi email
-            server.sendmail(sender_email, email, msg.as_string())
-            print("Email đã được gửi thành công!")
-        except Exception as e:
-            print("Đã xảy ra lỗi khi gửi email:", str(e))
     server.quit()
 
 

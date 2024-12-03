@@ -26,6 +26,11 @@
             <span class="slider round"></span>
         </label>
         <span id="toggleStatus" class="ml-2">Đóng</span>
+
+        <div class="m-3">
+            <img id="checkTheft" src="{{ url_for('static', filename='imgs/img.png') }}" style="width: 5%; display: none;" alt="Có trộm">
+        </div>
+
     </div>
 
     <!-- Chart Containers -->
@@ -53,11 +58,29 @@
                 <canvas id="doughnutChart"></canvas>
             </div>
         </div>
-        <div class="row mt-4">
-
-        </div>
     </div>
 </div>
+
+<script>
+    // Hiển thị thông báo có trộm
+        function updateTheftStatus() {
+            fetch('https://btl-iot.onrender.com/check_theft') // Gửi yêu cầu đến Flask
+                .then(response => response.json()) // Parse JSON từ Flask
+                .then(data => {
+                    const theftDiv = document.getElementById('checkTheft');
+                    console.log("có trộm: ", data["has_theft"]);
+                    if (data["has_theft"] == true) {
+                        theftDiv.style.display = 'block'; // Hiển thị nếu có trộm
+                    } else {
+                        theftDiv.style.display = 'none'; // Ẩn nếu không có trộm
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Cập nhật trạng thái mỗi 5 giây
+        setInterval(updateTheftStatus, 5000);
+</script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
