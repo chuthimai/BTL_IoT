@@ -178,21 +178,39 @@ def send_warning_emails():
 
 
 def send_email():
-    subject = "Warning: Theft Detected"
-    body = ("There has been a theft detected at the store. Please take necessary actions. "
-            "Click the link below to go to the website to confirm receipt of the notification."
-            "\n Link: https://btl-iot.onrender.com/theft")
     with open('./templates/email.txt', 'r') as f:
         email_list = f.read().splitlines()
+
+    # Đọc nội dung từ file HTML
+    html_file_path = "./templates/email_content.html"
+    try:
+        with open(html_file_path, "r", encoding="utf-8") as file:
+            html_content = file.read()
+    except Exception as e:
+        print("Lỗi khi đọc file HTML:", str(e))
+        return
+
     # Tạo kết nối tới server SMTP
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(sender_email, sender_password)
 
     for email in email_list:
-        message = f"Subject: {subject}\n\n{body}"
-        server.sendmail(sender_email, email, message)
+        # Tạo email
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Warning: Theft Detected"
+        msg["From"] = sender_email
+        msg["To"] = email
 
+        # Đính kèm nội dung HTML
+        msg.attach(MIMEText(html_content, "html"))
+
+        try:
+            # Kết nối tới SMTP server và gửi email
+            server.sendmail(sender_email, email, msg.as_string())
+            print("Email đã được gửi thành công!")
+        except Exception as e:
+            print("Đã xảy ra lỗi khi gửi email:", str(e))
     server.quit()
 
 
