@@ -109,8 +109,8 @@
             <div class="icon safe">
                 <i class="fas fa-shield-alt"></i>
             </div>
-            <header>An toàn!</header>
-            <p>Hệ thống đang ở trạng thái an toàn.</p>
+            <header>Xác nhận thành công!</header>
+            <p>Xác nhận đã nhận được thông báo có người đột nhập.<br> Dừng gửi mail.</p>
         </div>
         <div id="alert-container" class="status-container hidden">
             <div class="icon alert">
@@ -130,10 +130,10 @@
         const confirmButton = document.getElementById("confirm-button");
 
         function checkTheftStatus() {
-            fetch("https://btl-iot.onrender.com/get/store_state")
+            fetch("https://btl-iot.onrender.com/is_sending_emails")
                 .then(response => response.json())
                 .then(data => {
-                    if (data.is_close) {
+                    if (data.is_sending_emails) {
                         alertContainer.classList.remove("hidden");
                         safeContainer.classList.add("hidden");
                     } else {
