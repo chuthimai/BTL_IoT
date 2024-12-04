@@ -173,8 +173,7 @@ def check_theft():
 
 # kt email có đang gửi ko
 @app.route('/is_sending_emails')
-def check_theft():
-    global has_theft
+def check_sending_emails():
     return jsonify({'is_sending_emails': is_sending_emails})
 
 
